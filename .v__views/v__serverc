@@ -1,0 +1,29 @@
+let s:so_save = &so | let s:siso_save = &siso | set so=0 siso=0
+argglobal
+setlocal fdm=manual
+setlocal fde=0
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=0
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+silent! normal! zE
+3,4fold
+7,12fold
+14,28fold
+30,34fold
+36,39fold
+41,43fold
+7,44fold
+46,94fold
+96,152fold
+7
+normal! zo
+36
+normal! zo
+46
+normal! zo
+let &so = s:so_save | let &siso = s:siso_save
+doautoall SessionLoadPost
+" vim: set ft=vim :

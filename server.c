@@ -1,7 +1,7 @@
 #include "headsock.h"
 
-
-void str_ser1(int sockfd);
+/* void readfromsocket(int sockfd); */
+void readfromsocket2(int sockfd);
 
 int main(int argc, char *argv[]) {
 	// Create socket
@@ -33,9 +33,9 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-	printf("start receiving\n");
+	// Read file data from socket
 	while(1) {
-		str_ser1(sockfd);
+		readfromsocket2(sockfd);
 	}
 
 	// Close socket
@@ -43,28 +43,110 @@ int main(int argc, char *argv[]) {
 	exit(0);
 }
 
-void str_ser1(int sockfd) {
-	char recvs[MAXSIZE];
+void readfromsocket2(int sockfd) {
+	char buffer[BUFSIZE];
+	char recvs[2*DATALEN];
+	struct ack_so ack;
+	long filesize = 0;
 	int n = 0;
+	int end = 0;
 	struct sockaddr_in addr;
-
-	/*
-	int recvfrom(
-		int socket,
-		void *buf,
-		size_t buflen,
-		int flags,
-		struct sockaddr *sender_addr,   boilerplate
-		socklen_t *sender_addrlen       boilerplate
-		);
-		returns length of data read. If 0, connection is closed. If -1, error occurred. recvfrom is BLOCKING by default.
-	*/
-	int len = sizeof (struct sockaddr_in);
-	if ((n=recvfrom(sockfd, &recvs, MAXSIZE, 0, (struct sockaddr *)&addr, &len)) == -1) {
-		printf("error receiving");
-		exit(1);
+	socklen_t len = sizeof(struct sockaddr_in);
+	FILE *fp;
+	printf("Ready to receive data\n");
+	int acked = 1;
+	ack.num = 1;
+	ack.len = 0;
+	while(!end) {
+		if (acked) {
+			if ((n = recvfrom(sockfd, &recvs, 2*DATALEN, 0, (struct sockaddr *)&addr, &len)) == -1) {
+				printf("file receive error\n");
+				exit(1);
+			}
+			//printf ("%s \n", recvs);
+			if (recvs[n-1] == '\0') {
+				end = 1; //end flag, break out of while loop here
+				n--; //last char to be ignored \0
+			}
+			memcpy((buffer + filesize), recvs, n); // copies memory area, copies n byte from recvs and place it into area dest as buffer + filesize
+			filesize += n; //next memcopy area
+			acked = 0; //wait ack
+		}
+		if (!acked) {
+			if ((n = sendto(sockfd, &ack, 2, 0,(struct sockaddr *)&addr, len)) == -1) {
+				printf("error sending file\n");
+			}
+			else {
+				if (ack.num == 1 && ack.len == 0) {
+					//printf("sent ack\n");
+					acked = 1; //succesful acknowledge
+				}
+			}
+		}
 	}
-
-	recvs[n] = '\0';
-	printf("the received string is :\n%s", recvs);
+	if ((fp = fopen("myUDPreceive.txt", "wt")) == NULL) { //open file
+		printf("file write error\n");
+		exit(0);
+	}
+	fwrite(buffer, 1, filesize, fp); //write data to file
+	fclose(fp); //close file
+	printf("A file has been received\n total data received is %d bytes\n", (int)filesize);
 }
+
+/* void readfromsocket(int sockfd) { */
+/* 	char bigbuffer[BUFSIZE]; */
+/* 	char recvs[2*DATALEN]; */
+/* 	struct sockaddr_in addr; */
+/*  */
+/* 	printf("Ready to receive data\n"); */
+/* 	int acked = 1; */
+/* 	struct ack_so ack; */
+/* 	ack.num = 1; */
+/* 	ack.len = 0; */
+/*  */
+/*  */
+/* 	#<{(| */
+/* 	int recvfrom( */
+/* 		int socket, */
+/* 		void *buf, */
+/* 		size_t buflen, */
+/* 		int flags, */
+/* 		struct sockaddr *sender_addr,   boilerplate */
+/* 		socklen_t *sender_addrlen       boilerplate */
+/* 		); */
+/* 		returns length of data read. If 0, connection is closed. If -1, error occurred. recvfrom is BLOCKING by default. */
+/* 	|)}># */
+/* 	int len = sizeof (struct sockaddr_in); */
+/* 	int n = 0; */
+/* 	if ((n=recvfrom(sockfd, &recvs, MAXSIZE, 0, (struct sockaddr *)&addr, &len)) == -1) { */
+/* 		printf("error receiving"); */
+/* 		exit(1); */
+/* 	} */
+/* 	while (!end) { */
+/* 		if (acked) { */
+/* 			if ((n = recvfrom(sockfd, &recvs, 2*DATALEN, 0, (struct sockaddr *)&addr, &len)) == -1) { */
+/* 				printf("file receive error\n"); */
+/* 				exit(1); */
+/* 			} */
+/* 			if (recvs[n-1] == '\0') { */
+/* 				end = 1; //end flag, break out of while loop here */
+/* 				n--; //last char to be ignored \0 */
+/* 			} */
+/* 			memcpy((buffer + filesize), recvs, n); // copies memory area, copies n byte from recvs and place it into area dest as buffer + filesize */
+/* 			filesize += n; //next memcopy area */
+/* 			acked = 0; //wait ack */
+/* 		} */
+/* 		if (!acked) { */
+/* 			if ((n = sendto(sockfd, &ack, 2, 0,(struct sockaddr *)&addr, len)) == -1) { */
+/* 				printf("error sending file\n"); */
+/* 			} */
+/* 			else { */
+/* 				if (ack.num == 1 && ack.len == 0) { */
+/* 					acked = 1; //succesful acknowledge */
+/* 				} */
+/* 			} */
+/* 		} */
+/* 	} */
+/* 	recvs[n] = '\0'; */
+/* 	printf("the received string is :\n%s", recvs); */
+/* } */
