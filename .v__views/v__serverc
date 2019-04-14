@@ -15,14 +15,16 @@ silent! normal! zE
 30,34fold
 36,39fold
 41,43fold
-7,44fold
-46,94fold
-96,152fold
+6,44fold
+85,92fold
+95,151fold
+6
+normal! zo
 7
 normal! zo
-36
-normal! zo
-46
+6
+normal! zc
+85
 normal! zo
 let &so = s:so_save | let &siso = s:siso_save
 doautoall SessionLoadPost
