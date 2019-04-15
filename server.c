@@ -1,21 +1,16 @@
 #include "headsock.h"
 
 // Function Protoypes
-void readfromsocket(int sockfd);
 void readfromsocket2(int sockfd);
 
 int main(int argc, char *argv[]) {
-    // Create socket
-    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sockfd < 0) { printf("error in socket"); exit(1); }
-
-    /* Create socket config struct
+    /* Create socket config
        struct fields must be sent in network-byte order (big endian)
        struct sockaddr_in {
        short sin_family;          boilerplate=AF_INET
        ushort sin_port;           TCP/UDP port
        struct sin_addr {
-       ulong s_addr;          IPv4 address(es) you wish to receive from
+           ulong s_addr;          IPv4 address(es) you wish to receive from
        }
        unsigned char[8] sin_zero; boilerplate=structure padding(initialize to all 0s)
        } */
@@ -25,7 +20,11 @@ int main(int argc, char *argv[]) {
     my_addr.sin_addr.s_addr = INADDR_ANY; // INADDR_ANY=0
     bzero(&(my_addr.sin_zero), 8);
 
-    // Bind socket config struct to socket
+    // Create socket
+    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0) { printf("error in socket"); exit(1); }
+
+    // Bind socket config to socket
     if (bind(sockfd, (struct sockaddr *) &my_addr, sizeof(struct sockaddr)) == -1) {
         printf("error in binding");
         exit(1);
@@ -55,7 +54,7 @@ void readfromsocket2(int sockfd) {
     ack.num = 1;
     ack.len = 0;
 
-    long fileoffset = 0; // Tracks how many bytes have been received in total
+    long fileoffset = 0; // Tracks how many bytes have been received so far
     printf("Ready to receive data\n");
     int acked = 1;
     char packetlastbyte;
@@ -81,14 +80,19 @@ void readfromsocket2(int sockfd) {
     } while (packetlastbyte != 0x4);
     fileoffset-=1; // Disregard the End of Transmission character 0x4
 
-    // Write buffer to file
+    // Open file for writing
     char filename[] = "myUDPreceive.txt";
     FILE* fp = fopen(filename, "wt");
     if (fp == NULL) { printf("File %s doesn't exist\n", filename); exit(1); }
+
+    /* Copy the filebuffer contents into file
+    fwrite(void *ptr,        Buffer address
+           size_t size,      Size of each element
+           size_t count,     Number of elements to be copied
+           FILE *stream      File input stream
+           );
+    */
     fwrite(filebuffer, 1, fileoffset, fp);
     fclose(fp);
     printf("A file has been received\n total data received is %d bytes\n\n", (int)fileoffset);
-}
-
-void readfromsocket(int sockfd) {
 }
