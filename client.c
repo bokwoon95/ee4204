@@ -28,17 +28,23 @@ int main(int argc, char *argv[]) {
        char **h_addr_list;  list of host addresses
        }
        */
-    struct hostent *sh;
-    if ((sh=gethostbyname(argv[1]))==NULL) {
+    struct hostent* sh = gethostbyname(argv[1]);
+    if (sh == NULL) {
         printf("error when gethostbyname");
         exit(0);
     }
-    struct in_addr **addrs;
-    addrs = (struct in_addr **)sh->h_addr_list;
-    printf("/*----------DIAGNOSTIC INFO-------------*/\n");
-    printf("   addrs=%p is an *array of in_addr *structs\n", addrs);
-    printf("   *addrs=%p is equal to addrs[0]=%p\n", *addrs, addrs[0]);
-    printf("   (**addrs).s_addr=%u is equal to (*(addrs[0])).s_addr)=%u\n", (**addrs).s_addr, (*(addrs[0])).s_addr);
+    printf("canonical name: %s\n", sh->h_name);
+    char **pptr;
+    for (pptr=sh->h_aliases; *pptr != NULL; pptr++)
+        printf("the aliases name is: %s\n", *pptr);
+    switch(sh->h_addrtype) {
+        case AF_INET:
+            printf("AF_INET\n");
+            break;
+        default:
+            printf("unknown addrtype\n");
+            break;
+    }
 
     /* Create socket config struct
        struct fields must be sent in network-byte order (big endian)
@@ -53,38 +59,15 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in ser_addr;
     ser_addr.sin_family = AF_INET;
     ser_addr.sin_port = htons(MYUDP_PORT);
-    printf("   ser_addr.sin_addr.s_addr address before memcpy=%u\n", ser_addr.sin_addr.s_addr);
-    printf("   (*(addrs[0])).s_addr=%u\n", (*(addrs[0])).s_addr);
-    memcpy(&(ser_addr.sin_addr.s_addr), addrs[0], sizeof(struct in_addr));
-    printf("   ser_addr.sin_addr->s_addr address after memcpy=%u\n", ser_addr.sin_addr.s_addr);
-    printf("/*----------END DIAGNOSTIC INFO----------*/\n");
     bzero(&(ser_addr.sin_zero), 8);
-    printf("canonical name: %s\n", sh->h_name);
-    char **pptr;
-    for (pptr=sh->h_aliases; *pptr != NULL; pptr++)
-        printf("the aliases name is: %s\n", *pptr);
-    switch(sh->h_addrtype) {
-        case AF_INET:
-            printf("AF_INET\n");
-            break;
-        default:
-            printf("unknown addrtype\n");
-            break;
-    }
 
-    // Open file handler
-    FILE *fp;
-    /* char *filename; */
-    /* filename = "smalldata"; */
-    /* filename = "datatosend.txt"; */
-    if ((fp = fopen("myfile.txt", "r+t")) == NULL) {
-        printf("File doesn't exist\n");
-        exit(0);
-    }
+    // Open file for reading
+    char filename[] = "myfile.txt";
+    FILE* fp = fopen(filename, "r+t");
+    if (fp == NULL) { printf("File %s doesn't exist\n", filename); exit(1); }
 
     // Send file data to socket
     int len;
-    /* int time = sendtosocket(stdin, sockfd, (struct sockaddr *)&ser_addr, sizeof(struct sockaddr_in), &len); */
     float time = sendtosocket2(fp, sockfd, (struct sockaddr *)&ser_addr, sizeof(struct sockaddr_in), &len);
     float transferrate = (len/(float)time);
     printf("Time(ms) : %.3f, Data sent(byte): %d\nData rate: %f (Kbytes/s)\n", time, (int)len, transferrate);
@@ -126,14 +109,13 @@ float sendtosocket2(FILE *fp, int sockfd, struct sockaddr *addr, socklen_t addrl
 
     struct ack_so ack;
     int counter = 0;
-    long cursor = 0;
-    while (cursor <= filesize) {
-        int packetsize = (PACKLEN < filesize - cursor + 1) ? PACKLEN : filesize - cursor + 1;
+    long fileoffset = 0; // Tracks how many bytes have been sent in total
+    while (fileoffset <= filesize) {
+        int packetsize = (PACKLEN < filesize - fileoffset + 1) ? PACKLEN : filesize - fileoffset + 1;
         printf("packetsize = %d\n", packetsize);
-        memcpy(sendbuffer, (filebuffer + cursor), packetsize);
-        if (sendto(sockfd, &sendbuffer, packetsize, 0, addr, addrlen) < 0) {
-            printf("error in send\n");
-        }
+        memcpy(sendbuffer, (filebuffer + fileoffset), packetsize);
+        int n = sendto(sockfd, &sendbuffer, packetsize, 0, addr, addrlen);
+        if (n < 0) printf("error in sending packet\n");
         if (counter % 4 == 0) {
             if ((recvfrom(sockfd, &ack, 2, 0, addr, &addrlen)) == -1) {
                 printf("error when receiving\n");
@@ -147,8 +129,9 @@ float sendtosocket2(FILE *fp, int sockfd, struct sockaddr *addr, socklen_t addrl
             printf("ACK received, alternating packet numbers\n");
         }
         counter++;
-        cursor += packetsize;
+        fileoffset += packetsize;
     }
+    *len = fileoffset;
 
     // Get end time
     struct timeval timeRcv;

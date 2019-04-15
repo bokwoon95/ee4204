@@ -6,11 +6,8 @@ void readfromsocket2(int sockfd);
 
 int main(int argc, char *argv[]) {
     // Create socket
-    int sockfd;
-    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
-        printf("error in socket");
-        exit(1);
-    }
+    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0) { printf("error in socket"); exit(1); }
 
     /* Create socket config struct
        struct fields must be sent in network-byte order (big endian)
@@ -58,26 +55,22 @@ void readfromsocket2(int sockfd) {
     ack.num = 1;
     ack.len = 0;
 
-    long filesize = 0;
-    int n = 0;
-    FILE *fp;
+    long fileoffset = 0; // Tracks how many bytes have been received in total
     printf("Ready to receive data\n");
     int acked = 1;
     char packetlastbyte;
     // Keep reading until an End of Transmission character 0x4 is received
     do {
         if (acked) {
-            if ((n = recvfrom(sockfd, &recvbuffer, 2*PACKLEN, 0, Ap, Bp)) == -1) {
-                printf("file receive error\n");
-                exit(1);
-            }
-            memcpy((filebuffer + filesize), recvbuffer, n); // copies memory area, copies n byte from recvbuffer and place it into area dest as buffer + filesize
-            filesize += n; //next memcopy area
-            acked = 0; //wait ack
-            packetlastbyte = recvbuffer[n-1];
+            int bytesreceived = recvfrom(sockfd, &recvbuffer, 2*PACKLEN, 0, Ap, Bp);
+            if (bytesreceived < 0) printf("error in receiving packet\n");
+            memcpy((filebuffer + fileoffset), recvbuffer, bytesreceived);
+            fileoffset += bytesreceived;
+            acked = 0;
+            packetlastbyte = recvbuffer[bytesreceived-1];
         }
         if (!acked) {
-            if ((n = sendto(sockfd, &ack, 2, 0, Ap, B)) == -1) {
+            if (sendto(sockfd, &ack, 2, 0, Ap, B) < 0) {
                 printf("error sending ack\n");
             } else {
                 if (ack.num == 1 && ack.len == 0) {
@@ -86,16 +79,15 @@ void readfromsocket2(int sockfd) {
             }
         }
     } while (packetlastbyte != 0x4);
-    filesize-=1; // Disregard the End of Transmission character 0x4
+    fileoffset-=1; // Disregard the End of Transmission character 0x4
 
     // Write buffer to file
-    if ((fp = fopen("myUDPreceive.txt", "wt")) == NULL) {
-        printf("file write error\n");
-        exit(0);
-    }
-    fwrite(filebuffer, 1, filesize, fp);
+    char filename[] = "myUDPreceive.txt";
+    FILE* fp = fopen(filename, "wt");
+    if (fp == NULL) { printf("File %s doesn't exist\n", filename); exit(1); }
+    fwrite(filebuffer, 1, fileoffset, fp);
     fclose(fp);
-    printf("A file has been received\n total data received is %d bytes\n\n", (int)filesize);
+    printf("A file has been received\n total data received is %d bytes\n\n", (int)fileoffset);
 }
 
 void readfromsocket(int sockfd) {
