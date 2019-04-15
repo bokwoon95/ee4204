@@ -19,13 +19,13 @@ silent! normal! zE
 93,95fold
 97,100fold
 39,101fold
-103,110fold
+103,109fold
 30
+normal! zc
+34
 normal! zc
 39
 normal! zo
-45
-normal! zc
 61
 normal! zc
 93

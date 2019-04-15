@@ -18,16 +18,16 @@ int main(int argc, char *argv[]) {
        } */
     struct sockaddr_in addr_in;
     addr_in.sin_family = AF_INET;
-    addr_in.sin_port = htons(MYUDP_PORT);
+    addr_in.sin_port = htons(MYUDP_PORT); // htons() converts port number to big endian form
     if (argc < 2) { printf("Provide IP_addr to send to"); exit(1); }
     char *IP_addr = argv[1];
-    addr_in.sin_addr.s_addr = inet_addr(IP_addr);
+    addr_in.sin_addr.s_addr = inet_addr(IP_addr); // inet_addr converts IP_addr string to big endian form
     bzero(&(addr_in.sin_zero), 8);
     // Typecast internet socket address to generic socket address
     struct sockaddr *addr = (struct sockaddr *)&addr_in;
     socklen_t addrlen = sizeof(struct sockaddr);
 
-    // Create socket
+    // Create UDP socket
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd < 0) { printf("error in socket"); exit(1); }
 
@@ -101,8 +101,7 @@ void sendtosocket(int sockfd, struct sockaddr *addr, socklen_t addrlen) {
 }
 
 void tv_sub(struct  timeval *out, struct timeval *in) {
-    if ((out->tv_usec -= in->tv_usec) <0)
-    {
+    if ((out->tv_usec -= in->tv_usec) <0) {
         --out ->tv_sec;
         out ->tv_usec += 1000000;
     }
