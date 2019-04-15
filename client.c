@@ -1,6 +1,7 @@
 #include "headsock.h"
 
-/* float sendtosocket(FILE *fp, int sockfd, struct sockaddr *addr, int addrlen, int *len); */
+// Function Prototypes
+float sendtosocket(FILE *fp, int sockfd, struct sockaddr *addr, int addrlen, int *len);
 float sendtosocket2(FILE *fp, int sockfd, struct sockaddr *addr, socklen_t addrlen, int *len);
 void tv_sub(struct  timeval *out, struct timeval *in); //calculate the time interval between out and in
 
@@ -76,7 +77,7 @@ int main(int argc, char *argv[]) {
     /* char *filename; */
     /* filename = "smalldata"; */
     /* filename = "datatosend.txt"; */
-    if((fp = fopen("datatosend.txt", "r+t")) == NULL) {
+    if ((fp = fopen("myfile.txt", "r+t")) == NULL) {
         printf("File doesn't exist\n");
         exit(0);
     }
@@ -95,18 +96,16 @@ int main(int argc, char *argv[]) {
 }
 
 float sendtosocket2(FILE *fp, int sockfd, struct sockaddr *addr, socklen_t addrlen, int *len) {
+    char *filebuffer;
+    char sendbuffer[4*PACKLEN];
+
     // Get the total file size of *fp
-    long filesize = 0;
     fseek(fp, 0, SEEK_END);
+    long filesize = 0;
     filesize = ftell(fp);
     rewind(fp);
     printf("The file length is %d bytes\n", (int)filesize);
-    printf("the data unit is %d bytes\n", DATALEN);
-
-    // malloc buffer to contain the whole file (move file from disk to RAM)
-    char *buf;
-    buf = (char *) malloc (filesize);
-    if (buf == NULL) exit (2);
+    printf("the data unit is %d bytes\n", PACKLEN);
 
     /* Copy the file into the buffer.
     fread(void *ptr,        Buffer address
@@ -115,31 +114,28 @@ float sendtosocket2(FILE *fp, int sockfd, struct sockaddr *addr, socklen_t addrl
           FILE *stream      File input stream
           );
     */
-    fread (buf,1, filesize,fp);
-    buf[filesize] ='\0'; //append the end byte
+    filebuffer = (char *) malloc (filesize);
+    if (filebuffer == NULL) exit (2);
+    fread (filebuffer, 1, filesize, fp);
+    // Mark the last byte with the End Of Transmission ASCII character
+    filebuffer[filesize]=0x4; //append the end marker
 
     // Get start time
     struct timeval timeSend;
     gettimeofday(&timeSend, NULL);
 
     struct ack_so ack;
-    long cursor = 0;
-    char sends[4*DATALEN];
-    int n = 0;
-    int packetsize = 0;
     int counter = 0;
-    while(cursor <= filesize) {
-        counter = counter % 4;
-        packetsize = (DATALEN < filesize - cursor + 1) ? DATALEN : filesize - cursor + 1;
+    long cursor = 0;
+    while (cursor <= filesize) {
+        int packetsize = (PACKLEN < filesize - cursor + 1) ? PACKLEN : filesize - cursor + 1;
         printf("packetsize = %d\n", packetsize);
-        memcpy(sends, (buf + cursor), packetsize);
-        if ((n = sendto(sockfd, &sends, packetsize, 0, addr, addrlen)) == -1) {
-            if (n < 0) {
-                printf("error in send\n");
-            }
+        memcpy(sendbuffer, (filebuffer + cursor), packetsize);
+        if (sendto(sockfd, &sendbuffer, packetsize, 0, addr, addrlen) < 0) {
+            printf("error in send\n");
         }
-        if(!(counter%4)) {
-            if ((n = recvfrom(sockfd, &ack, 2, 0, addr, &addrlen)) == -1) {
+        if (counter % 4 == 0) {
+            if ((recvfrom(sockfd, &ack, 2, 0, addr, &addrlen)) == -1) {
                 printf("error when receiving\n");
                 exit(1);
             } else {
@@ -150,10 +146,11 @@ float sendtosocket2(FILE *fp, int sockfd, struct sockaddr *addr, socklen_t addrl
             }
             printf("ACK received, alternating packet numbers\n");
         }
-        cursor += packetsize;
         counter++;
+        cursor += packetsize;
     }
 
+    // Get end time
     struct timeval timeRcv;
     gettimeofday(&timeRcv, NULL);
     tv_sub(&timeRcv, &timeSend);
@@ -171,32 +168,6 @@ void tv_sub(struct  timeval *out, struct timeval *in) {
     out->tv_sec -= in->tv_sec;
 }
 
-/* float sendtosocket(FILE *fp, int sockfd, struct sockaddr *addr, int addrlen, int *len) { */
-/*     char sends[2*DATALEN]; */
-/*  */
-/*     fseek(fp, 0, SEEK_END); */
-/*     long filesize = ftell(fp); */
-/*     rewind(fp); */
-/*     printf("The file length is %d bytes\n", (int)filesize); */
-/*     printf("the data unit is %d bytes\n", DATALEN); */
-/*  */
-/*     // get start time */
-/*     struct timeval sendt; */
-/*     gettimeofday(&sendt, NULL); */
-/*  */
-/*     printf("Please input a string (less than 50 characters):\n"); */
-/*     if (fgets(sends, MAXSIZE, fp) == NULL) { */
-/*         printf("error input\n"); */
-/*     } */
-/*     sendto(sockfd, &sends, strlen(sends), 0, addr, addrlen); */
-/*  */
-/*     // get end time */
-/*     struct timeval recvt; */
-/*     gettimeofday(&recvt, NULL); */
-/*  */
-/*     // get time delta */
-/*     tv_sub(&recvt, &sendt); */
-/*     float time_inv = 0.0; */
-/*     time_inv += (recvt.tv_sec)*1000.0 + (recvt.tv_usec)/1000.0; */
-/*     return(time_inv); */
-/* } */
+float sendtosocket(FILE *fp, int sockfd, struct sockaddr *addr, int addrlen, int *len) {
+    return 1.0;
+}

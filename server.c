@@ -1,6 +1,7 @@
 #include "headsock.h"
 
-/* void readfromsocket(int sockfd); */
+// Function Protoypes
+void readfromsocket(int sockfd);
 void readfromsocket2(int sockfd);
 
 int main(int argc, char *argv[]) {
@@ -34,7 +35,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Read file data from socket
-    while(1) {
+    while (1) {
         readfromsocket2(sockfd);
     }
 
@@ -44,43 +45,39 @@ int main(int argc, char *argv[]) {
 }
 
 void readfromsocket2(int sockfd) {
-    char buffer[BUFSIZE];  // overall buffer
-    char recvs[4*DATALEN]; // intermediate buffer
+    char filebuffer[BUFSIZE];
+    char recvbuffer[4*PACKLEN];
 
-    /*
-    struct ack_so {
-        uint8_t num;
-        uint8_t len;
-    };
-    */
+    // A & B are optional arguments for recvfrom/sendto, we don't care what their value is as long it's a sockaddr struct
+    struct sockaddr A;
+    struct sockaddr *Ap = &A;
+    socklen_t B = sizeof(struct sockaddr);
+    socklen_t *Bp = &B;
+
     struct ack_so ack;
+    ack.num = 1;
+    ack.len = 0;
 
     long filesize = 0;
     int n = 0;
-    int end = 0;
-    struct sockaddr_in addr;
-    socklen_t len = sizeof(struct sockaddr_in);
     FILE *fp;
     printf("Ready to receive data\n");
     int acked = 1;
-    ack.num = 1;
-    ack.len = 0;
-    while(!end) {
+    char packetlastbyte;
+    // Keep reading until an End of Transmission character 0x4 is received
+    do {
         if (acked) {
-            if ((n = recvfrom(sockfd, &recvs, 2*DATALEN, 0, (struct sockaddr *)&addr, &len)) == -1) {
+            if ((n = recvfrom(sockfd, &recvbuffer, 2*PACKLEN, 0, Ap, Bp)) == -1) {
                 printf("file receive error\n");
                 exit(1);
             }
-            if (recvs[n-1] == '\0') {
-                end = 1; //end flag, break out of while loop here
-                n--; //last char to be ignored \0
-            }
-            memcpy((buffer + filesize), recvs, n); // copies memory area, copies n byte from recvs and place it into area dest as buffer + filesize
+            memcpy((filebuffer + filesize), recvbuffer, n); // copies memory area, copies n byte from recvbuffer and place it into area dest as buffer + filesize
             filesize += n; //next memcopy area
             acked = 0; //wait ack
+            packetlastbyte = recvbuffer[n-1];
         }
         if (!acked) {
-            if ((n = sendto(sockfd, &ack, 2, 0,(struct sockaddr *)&addr, len)) == -1) {
+            if ((n = sendto(sockfd, &ack, 2, 0, Ap, B)) == -1) {
                 printf("error sending ack\n");
             } else {
                 if (ack.num == 1 && ack.len == 0) {
@@ -88,72 +85,18 @@ void readfromsocket2(int sockfd) {
                 }
             }
         }
-    }
+    } while (packetlastbyte != 0x4);
+    filesize-=1; // Disregard the End of Transmission character 0x4
 
     // Write buffer to file
-    if ((fp = fopen("myUDPreceive.txt", "wt")) == NULL) { //open file
+    if ((fp = fopen("myUDPreceive.txt", "wt")) == NULL) {
         printf("file write error\n");
         exit(0);
     }
-    fwrite(buffer, 1, filesize, fp);
+    fwrite(filebuffer, 1, filesize, fp);
     fclose(fp);
-    printf("A file has been received\n total data received is %d bytes\n", (int)filesize);
+    printf("A file has been received\n total data received is %d bytes\n\n", (int)filesize);
 }
 
-/* void readfromsocket(int sockfd) { */
-/* 	char bigbuffer[BUFSIZE]; */
-/* 	char recvs[2*DATALEN]; */
-/* 	struct sockaddr_in addr; */
-/*  */
-/* 	printf("Ready to receive data\n"); */
-/* 	int acked = 1; */
-/* 	struct ack_so ack; */
-/* 	ack.num = 1; */
-/* 	ack.len = 0; */
-/*  */
-/*  */
-/* 	#<{(| */
-/* 	int recvfrom( */
-/* 		int socket, */
-/* 		void *buf, */
-/* 		size_t buflen, */
-/* 		int flags, */
-/* 		struct sockaddr *sender_addr,   boilerplate */
-/* 		socklen_t *sender_addrlen       boilerplate */
-/* 		); */
-/* 		returns length of data read. If 0, connection is closed. If -1, error occurred. recvfrom is BLOCKING by default. */
-/* 	|)}># */
-/* 	int len = sizeof (struct sockaddr_in); */
-/* 	int n = 0; */
-/* 	if ((n=recvfrom(sockfd, &recvs, MAXSIZE, 0, (struct sockaddr *)&addr, &len)) == -1) { */
-/* 		printf("error receiving"); */
-/* 		exit(1); */
-/* 	} */
-/* 	while (!end) { */
-/* 		if (acked) { */
-/* 			if ((n = recvfrom(sockfd, &recvs, 2*DATALEN, 0, (struct sockaddr *)&addr, &len)) == -1) { */
-/* 				printf("file receive error\n"); */
-/* 				exit(1); */
-/* 			} */
-/* 			if (recvs[n-1] == '\0') { */
-/* 				end = 1; //end flag, break out of while loop here */
-/* 				n--; //last char to be ignored \0 */
-/* 			} */
-/* 			memcpy((buffer + filesize), recvs, n); // copies memory area, copies n byte from recvs and place it into area dest as buffer + filesize */
-/* 			filesize += n; //next memcopy area */
-/* 			acked = 0; //wait ack */
-/* 		} */
-/* 		if (!acked) { */
-/* 			if ((n = sendto(sockfd, &ack, 2, 0,(struct sockaddr *)&addr, len)) == -1) { */
-/* 				printf("error sending file\n"); */
-/* 			} */
-/* 			else { */
-/* 				if (ack.num == 1 && ack.len == 0) { */
-/* 					acked = 1; //succesful acknowledge */
-/* 				} */
-/* 			} */
-/* 		} */
-/* 	} */
-/* 	recvs[n] = '\0'; */
-/* 	printf("the received string is :\n%s", recvs); */
-/* } */
+void readfromsocket(int sockfd) {
+}
