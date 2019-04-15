@@ -1,4 +1,4 @@
-// headfile for TCP program
+// headfile for UDP program
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -13,25 +13,6 @@
 #include <fcntl.h>
 #include <sys/time.h>
 
-#define NEWFILE (O_WRONLY|O_CREAT|O_TRUNC)
 #define MYTCP_PORT 4950
 #define MYUDP_PORT 5350
-#define DATALEN 500
-#define BUFSIZE 60000
-#define HEADLEN 8
-#define MAXSIZE 50
 #define DATAUNIT 500
-
-#define PACKLEN 500
-
-//data packet structure
-struct pack_so {
-    uint32_t num; // the sequence number
-    uint32_t len; // the packet length
-    char data[DATALEN]; //the packet data
-};
-
-struct ack_so {
-    uint8_t num;
-    uint8_t len;
-};

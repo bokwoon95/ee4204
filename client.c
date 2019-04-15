@@ -4,9 +4,15 @@
 // Function Prototypes
 void sendtosocket(int sockfd, struct sockaddr *addr, socklen_t addrlen);
 void tv_sub(struct  timeval *out, struct timeval *in); //calculate the time interval between out and in
-int wait_ack(int sockfd, struct sockaddr *addr, socklen_t addrlen);
+void wait_ack(int sockfd, struct sockaddr *addr, socklen_t addrlen);
 
 int main(int argc, char *argv[]) {
+    if (argc < 1) {
+        printf("   Usage: ./server.out <dataunits>, dataunits is in bytes\n");
+        exit(1);
+    }
+    char *IP_addr = argv[1];
+
     /* Create internet socket address
        struct fields must be in network-byte order (big endian)
        struct sockaddr_in {
@@ -20,8 +26,6 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in server_addr_in;
     server_addr_in.sin_family = AF_INET;
     server_addr_in.sin_port = htons(MYUDP_PORT); // htons() converts port number to big endian form
-    if (argc < 2) { printf("Provide IP_addr to send to"); exit(1); }
-    char *IP_addr = argv[1];
     server_addr_in.sin_addr.s_addr = inet_addr(IP_addr); // inet_addr converts IP_addr string to big endian form
     bzero(&(server_addr_in.sin_zero), 8);
     // Typecast internet socket address to generic socket address
@@ -93,7 +97,7 @@ void sendtosocket(int sockfd, struct sockaddr *server_addr, socklen_t server_add
     // Calculate and print transfer rate
     tv_sub(&timeRcv, &timeSend);
     float time = (timeRcv.tv_sec)*1000.0 + (timeRcv.tv_usec)/1000.0;
-    printf("Time(ms) : %.3f, Data sent(byte): %d\nData rate: %.3f (Kbytes/s)\n", time, (int)fileoffset, fileoffset/time);
+    printf("Time(ms) : %.3f, Data sent(byte): %d\nData rate: %.3f (Kbytes/s)\n", time, (int)fileoffset, fileoffset/time/1000);
 }
 
 void tv_sub(struct  timeval *out, struct timeval *in) {
@@ -104,7 +108,7 @@ void tv_sub(struct  timeval *out, struct timeval *in) {
     out->tv_sec -= in->tv_sec;
 }
 
-int wait_ack(int sockfd, struct sockaddr *addr, socklen_t addrlen) {
+void wait_ack(int sockfd, struct sockaddr *addr, socklen_t addrlen) {
     int ack_received = 0;
     int ACKNOWLEDGE = 0;
     while (!ack_received) {
@@ -115,12 +119,10 @@ int wait_ack(int sockfd, struct sockaddr *addr, socklen_t addrlen) {
             } else {
                 printf("ACKNOWLEDGE received but value was not 1\n");
                 exit(1);
-                return 0;
             }
         } else {
             printf("error when waiting for acknowledge\n");
             exit(1);
         }
     }
-    return 1;
 }

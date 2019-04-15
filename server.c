@@ -2,9 +2,14 @@
 
 // Function Protoypes
 void readfromsocket(int sockfd);
-int send_ack(int sockfd, struct sockaddr *client_addr, socklen_t client_addrlen, long fileoffset);
+void send_ack(int sockfd, struct sockaddr *client_addr, socklen_t client_addrlen, long fileoffset);
 
 int main(int argc, char *argv[]) {
+    if (argc < 1) {
+        printf("   Usage: ./server.out <dataunits>, dataunits is in bytes\n");
+        exit(1);
+    }
+
     /* Create internet socket addr
        struct fields must be in network-byte order (big endian)
        struct sockaddr_in {
@@ -29,22 +34,20 @@ int main(int argc, char *argv[]) {
     if (sockfd < 0) { printf("error creating socket"); exit(1); }
 
     // Bind socket address to socket (server only, client don't need)
-    if (bind(sockfd, server_addr, server_addrlen) == -1) {
-        printf("error in binding");
-        exit(1);
-    }
+    if (bind(sockfd, server_addr, server_addrlen) == -1) { printf("error in binding"); exit(1); }
 
     // Read file data from socket
-    while (1) {
-        printf("Ready to receive data\n");
-        readfromsocket(sockfd);
-    }
+    /* while (1) { */
+    /*     printf("Ready to receive data\n"); */
+    /*     readfromsocket(sockfd); */
+    /* } */
+    printf("Ready to receive data\n");
+    readfromsocket(sockfd);
     close(sockfd);
 }
 
 void readfromsocket(int sockfd) {
     char packet[DATAUNIT]; // buffer used to contain the incoming packet.
-    /* char intermediate[DATAUNIT * 4]; // buffer used to contain the */
 
     // Create empty struct to contain client address
     // It will be filled in by recvfrom()
@@ -57,7 +60,7 @@ void readfromsocket(int sockfd) {
     if (n < 0) { printf("error in receiving packet\n"); exit(1); }
     send_ack(sockfd, &client_addr, client_addrlen, 0); // Acknowledge that filesize has been received
     printf("Client says the file is %ld bytes big\n", filesize-1);
-    char filebuffer[BUFSIZE];
+    char filebuffer[filesize];
 
     int dum = 1; // data unit multiple
     long fileoffset = 0; // Tracks how many bytes have been received so far
@@ -66,8 +69,11 @@ void readfromsocket(int sockfd) {
     do {
         for (int i=0; i<dum; i++) {
             // Read incoming packet (recvfrom will block until data is received)
-            int bytesreceived = recvfrom(sockfd, &packet, 4*DATAUNIT, 0, &client_addr, &client_addrlen);
-            if (bytesreceived < 0) { printf("error in receiving packet\n"); exit(1); }
+            int bytesreceived = recvfrom(sockfd, &packet, DATAUNIT, 0, &client_addr, &client_addrlen);
+            if (bytesreceived < 0) {
+                printf("error in receiving packet\n");
+                exit(1);
+            }
 
             // Append packet data to filebuffer
             memcpy((filebuffer + fileoffset), packet, bytesreceived);
@@ -97,7 +103,7 @@ void readfromsocket(int sockfd) {
     printf("File data received successfully, %d bytes written\n\n", (int)fileoffset);
 }
 
-int send_ack(int sockfd, struct sockaddr *addr, socklen_t addrlen, long fileoffset) {
+void send_ack(int sockfd, struct sockaddr *addr, socklen_t addrlen, long fileoffset) {
     const int ACKNOWLEDGE = 1;
     int ack_sent = 0;
     int ack_thresh = 10;
@@ -108,9 +114,7 @@ int send_ack(int sockfd, struct sockaddr *addr, socklen_t addrlen, long fileoffs
             if (ack_thresh-- <= 0) {
                 printf("(%ld) emergency breakout of ack error loop\n", fileoffset * DATAUNIT);
                 exit(1);
-                return 0;
             } else printf("error sending ack, trying again..\n");
         }
     }
-    return 1;
 }
