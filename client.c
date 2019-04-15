@@ -72,9 +72,8 @@ void sendtosocket(int sockfd, struct sockaddr *server_addr, socklen_t server_add
     long fileoffset = 0; // Tracks how many bytes have been sent so far
     int dum = 1; // data unit multiple
     while (fileoffset < filesize) {
-        dum = (++dum % 5 == 0) ? 1 : dum % 5; // dum alternates between 1,2,3,4
         int packetsize = (dum * DATAUNIT < filesize - fileoffset) ? dum * DATAUNIT : filesize - fileoffset;
-        printf("packetsize = %d\n", packetsize);
+        printf("packetsize = %d sent;", packetsize);
         // Copy the next section of the filebuffer into the packet
         memcpy(packet, (filebuffer + fileoffset), packetsize);
         // Send packet data into socket
@@ -82,6 +81,7 @@ void sendtosocket(int sockfd, struct sockaddr *server_addr, socklen_t server_add
         if (n < 0) printf("error in sending packet\n");
         wait_ack(sockfd, server_addr, server_addrlen);
         fileoffset += packetsize;
+        dum = (++dum % 5 == 0) ? 1 : dum % 5; // dum alternates between 1,2,3,4
     }
 
     // Get end time
@@ -109,7 +109,7 @@ void wait_ack(int sockfd, struct sockaddr *addr, socklen_t addrlen) {
         if (recvfrom(sockfd, &ACKNOWLEDGE, sizeof(ACKNOWLEDGE), 0, addr, &addrlen) >= 0) {
             if (ACKNOWLEDGE == 1) {
                 ack_received = 1;
-                printf("ACKNOWLEDGE received\n");
+                printf("packet acknowledged\n");
             } else {
                 printf("ACKNOWLEDGE received but value was not 1\n");
                 exit(1);

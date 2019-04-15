@@ -55,7 +55,7 @@ void readfromsocket(int sockfd) {
     int n = recvfrom(sockfd, &filesize, sizeof(filesize), 0, &client_addr, &client_addrlen);
     if (n < 0) { printf("error in receiving packet\n"); exit(1); }
     send_ack(sockfd, &client_addr, client_addrlen); // Acknowledge that filesize has been received
-    printf("The file is %ld bytes big\n", filesize);
+    printf("Client says the file is %ld bytes big\n", filesize-1);
     char filebuffer[filesize];
 
     long fileoffset = 0; // Tracks how many bytes have been received so far
@@ -89,7 +89,7 @@ void readfromsocket(int sockfd) {
            ); */
     fwrite(filebuffer, 1, fileoffset, fp);
     fclose(fp);
-    printf("A file has been received\n total data received is %d bytes\n\n", (int)fileoffset);
+    printf("File data received successfully, %d bytes written\n\n", (int)fileoffset);
 }
 
 void send_ack(int sockfd, struct sockaddr *addr, socklen_t addrlen) {
@@ -99,7 +99,6 @@ void send_ack(int sockfd, struct sockaddr *addr, socklen_t addrlen) {
     while (!ack_sent) {
         if (sendto(sockfd, &ACKNOWLEDGE, sizeof(ACKNOWLEDGE), 0, addr, addrlen) >= 0) {
             ack_sent = 1;
-            printf("ACKNOWLEDGE sent\n");
         } else {
             if (ack_thresh-- <= 0) {
                 printf("emergency breakout of ack error loop\n");
