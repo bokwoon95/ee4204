@@ -53,12 +53,18 @@ int main(void)
 
 		if ((pid = fork())==0)                                         // creat acception process
 		{
+			printf("   child closing sockfd: %d\n", sockfd);
+			printf("   child closing con_fd: %d\n", con_fd);
 			close(sockfd);
 			str_ser(con_fd);                                          //receive packet and response
 			close(con_fd);
 			exit(0);
 		}
-		else close(con_fd);                                         //parent process
+		else {
+			printf("   parent created child pid: %d\n", pid);
+			printf("   parent closing con_fd: %d\n", con_fd);
+			close(con_fd);                                         //parent process
+		}
 	}
 	close(sockfd);
 	exit(0);
