@@ -24,12 +24,12 @@
 
 //data packet structure
 struct pack_so {
-	uint32_t num; // the sequence number
-	uint32_t len; // the packet length
-	char data[DATALEN]; //the packet data
+    uint32_t num; // the sequence number
+    uint32_t len; // the packet length
+    char data[DATALEN]; //the packet data
 };
 
 struct ack_so {
-	uint8_t num;
-	uint8_t len;
+    uint8_t num;
+    uint8_t len;
 };

@@ -20,16 +20,19 @@ silent! normal! zE
 7,95fold
 98,104fold
 106,109fold
-111,112fold
-117,119fold
-97,163fold
+106,109fold
+111,119fold
+111,119fold
+121,123fold
 165,172fold
 174,202fold
 7
 normal! zo
 7
 normal! zc
-97
+106
+normal! zo
+111
 normal! zo
 174
 normal! zo

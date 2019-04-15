@@ -103,15 +103,19 @@ float sendtosocket2(FILE *fp, int sockfd, struct sockaddr *addr, socklen_t addrl
     printf("The file length is %d bytes\n", (int)filesize);
     printf("the data unit is %d bytes\n", DATALEN);
 
-    // Allocate memory to contain the whole file.
+    // malloc buffer to contain the whole file (move file from disk to RAM)
     char *buf;
     buf = (char *) malloc (filesize);
     if (buf == NULL) exit (2);
 
-    // Copy the file into the buffer.
+    /* Copy the file into the buffer.
+    fread(void *ptr,        Buffer address
+          size_t size,      Size of each element
+          size_t count,     Number of elements to be read in
+          FILE *stream      File input stream
+          );
+    */
     fread (buf,1, filesize,fp);
-
-    /*** The whole file is loaded in the buffer. ***/
     buf[filesize] ='\0'; //append the end byte
 
     // Get start time
@@ -120,25 +124,21 @@ float sendtosocket2(FILE *fp, int sockfd, struct sockaddr *addr, socklen_t addrl
 
     struct ack_so ack;
     long cursor = 0;
-    char sends[2*DATALEN];
+    char sends[4*DATALEN];
     int n = 0;
-    int sendLength = 0;
+    int packetsize = 0;
     int counter = 0;
     while(cursor <= filesize) {
-        counter = counter%3;
-        if ((filesize - cursor + 1) < (DATALEN)) {
-            sendLength = filesize - cursor + 1;
-        } else {
-            sendLength = DATALEN;
-        }
-        printf("slen = %d\n", sendLength);
-        memcpy(sends, (buf + cursor), sendLength);
-        if ((n = sendto(sockfd, &sends, sendLength, 0, addr, addrlen)) == -1) {
+        counter = counter % 4;
+        packetsize = (DATALEN < filesize - cursor + 1) ? DATALEN : filesize - cursor + 1;
+        printf("packetsize = %d\n", packetsize);
+        memcpy(sends, (buf + cursor), packetsize);
+        if ((n = sendto(sockfd, &sends, packetsize, 0, addr, addrlen)) == -1) {
             if (n < 0) {
                 printf("error in send\n");
             }
         }
-        if(!(counter%2)) {
+        if(!(counter%4)) {
             if ((n = recvfrom(sockfd, &ack, 2, 0, addr, &addrlen)) == -1) {
                 printf("error when receiving\n");
                 exit(1);
@@ -150,7 +150,7 @@ float sendtosocket2(FILE *fp, int sockfd, struct sockaddr *addr, socklen_t addrl
             }
             printf("ACK received, alternating packet numbers\n");
         }
-        cursor += sendLength;
+        cursor += packetsize;
         counter++;
     }
 

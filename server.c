@@ -44,9 +44,17 @@ int main(int argc, char *argv[]) {
 }
 
 void readfromsocket2(int sockfd) {
-    char buffer[BUFSIZE];
-    char recvs[2*DATALEN];
+    char buffer[BUFSIZE];  // overall buffer
+    char recvs[4*DATALEN]; // intermediate buffer
+
+    /*
+    struct ack_so {
+        uint8_t num;
+        uint8_t len;
+    };
+    */
     struct ack_so ack;
+
     long filesize = 0;
     int n = 0;
     int end = 0;
@@ -73,7 +81,7 @@ void readfromsocket2(int sockfd) {
         }
         if (!acked) {
             if ((n = sendto(sockfd, &ack, 2, 0,(struct sockaddr *)&addr, len)) == -1) {
-                printf("error sending file\n");
+                printf("error sending ack\n");
             } else {
                 if (ack.num == 1 && ack.len == 0) {
                     acked = 1; //succesful acknowledge
