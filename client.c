@@ -7,7 +7,7 @@ void tv_sub(struct  timeval *out, struct timeval *in); //calculate the time inte
 void wait_ack(int sockfd, struct sockaddr *addr, socklen_t addrlen);
 
 int main(int argc, char *argv[]) {
-    if (argc < 1) {
+    if (argc < 2) {
         printf("   Usage: ./server.out <dataunits>, dataunits is in bytes\n");
         exit(1);
     }

@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# gcc convenient, with warnings
+if [ $# -gt 0 ]; then
+  CFILE="$(echo $1 | perl -pe "s:^(.+)\.c$:\1:")"
+  shift; CARGS="$@"
+  if [ "$CFILE" = "" ]; then
+    echo "That's not a .c file"
+    exit 1
+  fi
+  if gcc -Wall -Werror "$CFILE.c" -o "$CFILE.out"; then
+    eval "./$CFILE.out $CARGS"
+  elif gcc -Wall "$CFILE.c" -o "$CFILE.out"; then
+    echo "warning present, continue? y/n (leave blank for \"y\")"
+    read CONTINUE
+    if [ "$CONTINUE" = "" -o "$CONTINUE" = "y" ]; then
+      eval "./$CFILE.out $CARGS"
+    fi
+  fi
+fi
