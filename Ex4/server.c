@@ -5,16 +5,7 @@ void readfromsocket(int sockfd); // Receive data from socket sockfd
 void send_ack(int sockfd, struct sockaddr *client_addr, socklen_t client_addrlen, long fileoffset); // Block until acknowledge is sent
 
 int main(int argc, char *argv[]) {
-    /* Create internet socket addr
-       struct fields must be in network-byte order (big endian)
-       struct sockaddr_in {
-           short sin_family;          boilerplate=AF_INET
-           ushort sin_port;           TCP/UDP port
-           struct sin_addr {
-               ulong s_addr;          IPv4 address(es) you wish to receive from
-           }
-           unsigned char[8] sin_zero; boilerplate=structure padding(initialize to all 0s)
-       } */
+    // Setup server socket address
     struct sockaddr_in server_addr_in;
     server_addr_in.sin_family = AF_INET;
     server_addr_in.sin_port = htons(MYUDP_PORT); // htons() converts port number to big endian
@@ -93,12 +84,7 @@ void readfromsocket(int sockfd) {
     FILE* fp = fopen(filename, "wt");
     if (fp == NULL) { printf("File %s doesn't exist\n", filename); exit(1); }
 
-    /* Copy the filebuffer contents into file
-    fwrite(void *ptr,        Buffer address
-           size_t size,      Size of each element to be copied
-           size_t count,     Number of elements to be copied
-           FILE *stream      File input stream
-           ); */
+    // Copy the filebuffer contents into file
     fwrite(filebuffer, 1, fileoffset, fp);
     fclose(fp);
     printf("File data received successfully, %d bytes written\n\n", (int)fileoffset);

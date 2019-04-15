@@ -8,22 +8,13 @@ void wait_ack(int sockfd, struct sockaddr *addr, socklen_t addrlen); // Block un
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        printf("Please provide an IP_addr\n");
-        printf("   Usage: ./server.out <IP_addr>\n");
+        printf("Please provide an IP_addr. Example: ./server.out 127.0.0.1\n");
+        printf("'localhost' does not work, use 127.0.0.1 instead of 'localhost'\n");
         exit(1);
     }
     char *IP_addr = argv[1];
 
-    /* Create internet socket address
-       struct fields must be in network-byte order (big endian)
-       struct sockaddr_in {
-           short sin_family;          boilerplate=AF_INET
-           ushort sin_port;           TCP/UDP port
-           struct sin_addr {
-               ulong s_addr;          IPv4 address(es) you wish to send to
-           }
-           unsigned char[8] sin_zero; boilerplate=structure padding(initialize to all 0s)
-       } */
+    // Setup server socket address
     struct sockaddr_in server_addr_in;
     server_addr_in.sin_family = AF_INET;
     server_addr_in.sin_port = htons(MYUDP_PORT); // htons() converts port number to big endian form
@@ -62,12 +53,7 @@ void sendtosocket(int sockfd, struct sockaddr *server_addr, socklen_t server_add
     //----------------------------------------//
     char filebuffer[filesize];
 
-    /* Copy the file contents into filebuffer
-    fread(void *ptr,        Buffer address
-          size_t size,      Size of each element to be copied
-          size_t count,     Number of elements to be copied
-          FILE *stream      File input stream
-          ); */
+    // Copy the file contents into filebuffer
     fread(filebuffer, 1, filesize, fp);
     filebuffer[filesize]=0x4; // Append the filebuffer contents with the End of Transmission ASCII character 0x4
     filesize+=1; // Increase filesize by 1 byte because of the addition of the EOT ASCII character 0x4
@@ -114,7 +100,6 @@ void sendtosocket(int sockfd, struct sockaddr *server_addr, socklen_t server_add
     printf("Data rate: %.3f (Kbytes/s) for DATAUNIT of %d bytes\n", fileoffset/time/1000, DATAUNIT);
 }
 
-// Time value subtraction
 void tv_sub(struct  timeval *out, struct timeval *in) {
     if ((out->tv_usec -= in->tv_usec) <0) {
         --out ->tv_sec;
