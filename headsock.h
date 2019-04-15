@@ -20,6 +20,7 @@
 #define BUFSIZE 60000
 #define HEADLEN 8
 #define MAXSIZE 50
+#define DATAUNIT 500
 
 #define PACKLEN 500
 
