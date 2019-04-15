@@ -2,7 +2,7 @@
 
 // Function Protoypes
 void readfromsocket(int sockfd);
-void send_ack(int sockfd, struct sockaddr *client_addr, socklen_t client_addrlen);
+int send_ack(int sockfd, struct sockaddr *client_addr, socklen_t client_addrlen, long fileoffset);
 
 int main(int argc, char *argv[]) {
     /* Create internet socket addr
@@ -43,7 +43,8 @@ int main(int argc, char *argv[]) {
 }
 
 void readfromsocket(int sockfd) {
-    char packet[4 * DATAUNIT]; // buffer used to contain the incoming packet. Max size is 4 * DATAUNIT
+    char packet[DATAUNIT]; // buffer used to contain the incoming packet.
+    /* char intermediate[DATAUNIT * 4]; // buffer used to contain the */
 
     // Create empty struct to contain client address
     // It will be filled in by recvfrom()
@@ -54,25 +55,29 @@ void readfromsocket(int sockfd) {
     long filesize;
     int n = recvfrom(sockfd, &filesize, sizeof(filesize), 0, &client_addr, &client_addrlen);
     if (n < 0) { printf("error in receiving packet\n"); exit(1); }
-    send_ack(sockfd, &client_addr, client_addrlen); // Acknowledge that filesize has been received
+    send_ack(sockfd, &client_addr, client_addrlen, 0); // Acknowledge that filesize has been received
     printf("Client says the file is %ld bytes big\n", filesize-1);
-    char filebuffer[filesize];
+    char filebuffer[BUFSIZE];
 
+    int dum = 1; // data unit multiple
     long fileoffset = 0; // Tracks how many bytes have been received so far
     char packetlastbyte; // Tracks the last byte of the latest packet received
     // Keep reading from socket until the last byte of the latest packet is an End of Transmission character 0x4
     do {
-        // Read incoming packet (recvfrom will block until data is received)
-        int bytesreceived = recvfrom(sockfd, &packet, 4*DATAUNIT, 0, &client_addr, &client_addrlen);
-        if (bytesreceived < 0) { printf("error in receiving packet\n"); exit(1); }
+        for (int i=0; i<dum; i++) {
+            // Read incoming packet (recvfrom will block until data is received)
+            int bytesreceived = recvfrom(sockfd, &packet, 4*DATAUNIT, 0, &client_addr, &client_addrlen);
+            if (bytesreceived < 0) { printf("error in receiving packet\n"); exit(1); }
 
-        // Append packet data to filebuffer
-        memcpy((filebuffer + fileoffset), packet, bytesreceived);
-        fileoffset += bytesreceived;
-        packetlastbyte = packet[bytesreceived-1]; // last byte's index is bytesreceived-1 because index starts from 0
+            // Append packet data to filebuffer
+            memcpy((filebuffer + fileoffset), packet, bytesreceived);
+            fileoffset += bytesreceived;
+            if ((packetlastbyte = packet[bytesreceived-1]) == 0x4) break;
+        }
 
         // Acknowledge that packet has been received
-        send_ack(sockfd, &client_addr, client_addrlen);
+        send_ack(sockfd, &client_addr, client_addrlen, fileoffset);
+        dum = (++dum % 5 == 0) ? 1 : dum % 5; // dum alternates between 1,2,3,4
     } while (packetlastbyte != 0x4);
     fileoffset-=1; // Disregard the last byte of filebuffer because it is the End of Transmission character 0x4
 
@@ -92,7 +97,7 @@ void readfromsocket(int sockfd) {
     printf("File data received successfully, %d bytes written\n\n", (int)fileoffset);
 }
 
-void send_ack(int sockfd, struct sockaddr *addr, socklen_t addrlen) {
+int send_ack(int sockfd, struct sockaddr *addr, socklen_t addrlen, long fileoffset) {
     const int ACKNOWLEDGE = 1;
     int ack_sent = 0;
     int ack_thresh = 10;
@@ -101,9 +106,11 @@ void send_ack(int sockfd, struct sockaddr *addr, socklen_t addrlen) {
             ack_sent = 1;
         } else {
             if (ack_thresh-- <= 0) {
-                printf("emergency breakout of ack error loop\n");
+                printf("(%ld) emergency breakout of ack error loop\n", fileoffset * DATAUNIT);
                 exit(1);
+                return 0;
             } else printf("error sending ack, trying again..\n");
         }
     }
+    return 1;
 }

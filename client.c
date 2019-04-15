@@ -4,7 +4,7 @@
 // Function Prototypes
 void sendtosocket(int sockfd, struct sockaddr *addr, socklen_t addrlen);
 void tv_sub(struct  timeval *out, struct timeval *in); //calculate the time interval between out and in
-void wait_ack(int sockfd, struct sockaddr *addr, socklen_t addrlen);
+int wait_ack(int sockfd, struct sockaddr *addr, socklen_t addrlen);
 
 int main(int argc, char *argv[]) {
     /* Create internet socket address
@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 }
 
 void sendtosocket(int sockfd, struct sockaddr *server_addr, socklen_t server_addrlen) {
-    char packet[4 * DATAUNIT]; // buffer used to contain the incoming packet. Max size is 4 * DATAUNIT
+    char packet[DATAUNIT]; // buffer used to contain the incoming packet
 
     // Open file for reading
     char filename[] = "myfile.txt";
@@ -48,7 +48,6 @@ void sendtosocket(int sockfd, struct sockaddr *server_addr, socklen_t server_add
     // Get the total filesize and allocate filebuffer space accordingly
     fseek(fp, 0, SEEK_END); long filesize = ftell(fp); rewind(fp);
     printf("The file length is %d bytes\n", (int)filesize);
-    /* printf("the data unit is %d bytes\n", DATAUNIT); */
     char filebuffer[filesize]; // buffer used to contain the entire file
     /* Copy the file contents into filebuffer
     fread(void *ptr,        Buffer address
@@ -72,15 +71,18 @@ void sendtosocket(int sockfd, struct sockaddr *server_addr, socklen_t server_add
     long fileoffset = 0; // Tracks how many bytes have been sent so far
     int dum = 1; // data unit multiple
     while (fileoffset < filesize) {
-        int packetsize = (dum * DATAUNIT < filesize - fileoffset) ? dum * DATAUNIT : filesize - fileoffset;
-        printf("packetsize = %d sent;", packetsize);
-        // Copy the next section of the filebuffer into the packet
-        memcpy(packet, (filebuffer + fileoffset), packetsize);
-        // Send packet data into socket
-        int n = sendto(sockfd, &packet, packetsize, 0, server_addr, server_addrlen);
-        if (n < 0) printf("error in sending packet\n");
+        for (int i=0; i<dum; i++) {
+            int packetsize = (DATAUNIT < filesize - fileoffset) ? DATAUNIT : filesize - fileoffset;
+            // Copy the next section of the filebuffer into the packet
+            memcpy(packet, (filebuffer + fileoffset), packetsize);
+            // Update fileoffset
+            fileoffset += packetsize;
+            // Send packet data into socket
+            int n = sendto(sockfd, &packet, packetsize, 0, server_addr, server_addrlen);
+            if (n < 0) printf("error in sending packet\n");
+            printf("packet of size %d sent\n", packetsize);
+        }
         wait_ack(sockfd, server_addr, server_addrlen);
-        fileoffset += packetsize;
         dum = (++dum % 5 == 0) ? 1 : dum % 5; // dum alternates between 1,2,3,4
     }
 
@@ -102,21 +104,23 @@ void tv_sub(struct  timeval *out, struct timeval *in) {
     out->tv_sec -= in->tv_sec;
 }
 
-void wait_ack(int sockfd, struct sockaddr *addr, socklen_t addrlen) {
+int wait_ack(int sockfd, struct sockaddr *addr, socklen_t addrlen) {
     int ack_received = 0;
     int ACKNOWLEDGE = 0;
     while (!ack_received) {
         if (recvfrom(sockfd, &ACKNOWLEDGE, sizeof(ACKNOWLEDGE), 0, addr, &addrlen) >= 0) {
             if (ACKNOWLEDGE == 1) {
                 ack_received = 1;
-                printf("packet acknowledged\n");
+                printf("ACKNOWLEDGE received\n");
             } else {
                 printf("ACKNOWLEDGE received but value was not 1\n");
                 exit(1);
+                return 0;
             }
         } else {
             printf("error when waiting for acknowledge\n");
             exit(1);
         }
     }
+    return 1;
 }
