@@ -14,21 +14,21 @@ int main(int argc, char *argv[]) {
            }
            unsigned char[8] sin_zero; boilerplate=structure padding(initialize to all 0s)
        } */
-    struct sockaddr_in addr_in;
-    addr_in.sin_family = AF_INET;
-    addr_in.sin_port = htons(MYUDP_PORT); // htons() converts port number to big endian
-    addr_in.sin_addr.s_addr = INADDR_ANY; // INADDR_ANY=0, 0 means receive data from any IP address
-    bzero(&(addr_in.sin_zero), 8);
+    struct sockaddr_in server_addr_in;
+    server_addr_in.sin_family = AF_INET;
+    server_addr_in.sin_port = htons(MYUDP_PORT); // htons() converts port number to big endian
+    server_addr_in.sin_addr.s_addr = INADDR_ANY; // INADDR_ANY=0, 0 means receive data from any IP address
+    bzero(&(server_addr_in.sin_zero), 8);
     // Typecast internet socket address to generic socket address
-    struct sockaddr *addr = (struct sockaddr *)&addr_in;
-    socklen_t addrlen = sizeof(struct sockaddr);
+    struct sockaddr *server_addr = (struct sockaddr *)&server_addr_in;
+    socklen_t server_addrlen = sizeof(struct sockaddr);
 
     // Create UDP socket
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sockfd < 0) { printf("error in socket"); exit(1); }
+    if (sockfd < 0) { printf("error creating socket"); exit(1); }
 
     // Bind socket config to socket (server only, client don't need)
-    if (bind(sockfd, addr, addrlen) == -1) {
+    if (bind(sockfd, server_addr, server_addrlen) == -1) {
         printf("error in binding");
         exit(1);
     }

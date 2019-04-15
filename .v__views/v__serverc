@@ -21,6 +21,10 @@ silent! normal! zE
 normal! zo
 6
 normal! zo
+7
+normal! zo
+30
+normal! zo
 85
 normal! zo
 90

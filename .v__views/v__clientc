@@ -20,11 +20,7 @@ silent! normal! zE
 97,100fold
 39,101fold
 103,109fold
-9
-normal! zc
 30
-normal! zc
-34
 normal! zc
 39
 normal! zo

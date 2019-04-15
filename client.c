@@ -16,27 +16,27 @@ int main(int argc, char *argv[]) {
            }
            unsigned char[8] sin_zero; boilerplate=structure padding(initialize to all 0s)
        } */
-    struct sockaddr_in addr_in;
-    addr_in.sin_family = AF_INET;
-    addr_in.sin_port = htons(MYUDP_PORT); // htons() converts port number to big endian form
+    struct sockaddr_in server_addr_in;
+    server_addr_in.sin_family = AF_INET;
+    server_addr_in.sin_port = htons(MYUDP_PORT); // htons() converts port number to big endian form
     if (argc < 2) { printf("Provide IP_addr to send to"); exit(1); }
     char *IP_addr = argv[1];
-    addr_in.sin_addr.s_addr = inet_addr(IP_addr); // inet_addr converts IP_addr string to big endian form
-    bzero(&(addr_in.sin_zero), 8);
+    server_addr_in.sin_addr.s_addr = inet_addr(IP_addr); // inet_addr converts IP_addr string to big endian form
+    bzero(&(server_addr_in.sin_zero), 8);
     // Typecast internet socket address to generic socket address
-    struct sockaddr *addr = (struct sockaddr *)&addr_in;
-    socklen_t addrlen = sizeof(struct sockaddr);
+    struct sockaddr *server_addr = (struct sockaddr *)&server_addr_in;
+    socklen_t server_addrlen = sizeof(struct sockaddr);
 
     // Create UDP socket
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sockfd < 0) { printf("error in socket"); exit(1); }
+    if (sockfd < 0) { printf("error creating socket"); exit(1); }
 
     // Send file data to socket
-    sendtosocket(sockfd, addr, addrlen);
+    sendtosocket(sockfd, server_addr, server_addrlen);
     close(sockfd);
 }
 
-void sendtosocket(int sockfd, struct sockaddr *addr, socklen_t addrlen) {
+void sendtosocket(int sockfd, struct sockaddr *server_addr, socklen_t server_addrlen) {
     // Open file for reading
     char filename[] = "myfile.txt";
     FILE* fp = fopen(filename, "rt");
@@ -72,10 +72,10 @@ void sendtosocket(int sockfd, struct sockaddr *addr, socklen_t addrlen) {
         // Copy the next section of the filebuffer into the packet
         memcpy(packet, (filebuffer + fileoffset), packetsize);
         // Send packet data into socket
-        int n = sendto(sockfd, &packet, packetsize, 0, addr, addrlen);
+        int n = sendto(sockfd, &packet, packetsize, 0, server_addr, server_addrlen);
         if (n < 0) printf("error in sending packet\n");
         if (counter % 4 == 0) {
-            if ((recvfrom(sockfd, &ack, 2, 0, addr, &addrlen)) == -1) {
+            if ((recvfrom(sockfd, &ack, 2, 0, server_addr, &server_addrlen)) == -1) {
                 printf("error when receiving\n");
                 exit(1);
             } else {
