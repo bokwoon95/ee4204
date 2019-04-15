@@ -83,7 +83,10 @@ void sendtosocket(int sockfd, struct sockaddr *server_addr, socklen_t server_add
             fileoffset += packetsize;
             // Send packet data into socket
             int n = sendto(sockfd, &packet, packetsize, 0, server_addr, server_addrlen);
-            if (n < 0) printf("error in sending packet\n");
+            if (n < 0) {
+                printf("error in sending packet\n");
+                exit(1);
+            }
             printf("packet of size %d sent\n", packetsize);
         }
         wait_ack(sockfd, server_addr, server_addrlen);
@@ -97,7 +100,8 @@ void sendtosocket(int sockfd, struct sockaddr *server_addr, socklen_t server_add
     // Calculate and print transfer rate
     tv_sub(&timeRcv, &timeSend);
     float time = (timeRcv.tv_sec)*1000.0 + (timeRcv.tv_usec)/1000.0;
-    printf("Time(ms) : %.3f, Data sent(byte): %d\nData rate: %.3f (Kbytes/s)\n", time, (int)fileoffset, fileoffset/time/1000);
+    printf("Time(ms) : %.3f, Data sent(byte): %d\n", time, (int)fileoffset);
+    printf("Data rate: %.3f (Kbytes/s) for DATAUNIT of %d bytes\n", fileoffset/time/1000, DATAUNIT);
 }
 
 void tv_sub(struct  timeval *out, struct timeval *in) {
