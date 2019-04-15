@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
 
 void readfromsocket(int sockfd) {
     char filebuffer[BUFSIZE]; // buffer used to contain the entire file
-    char recvbuffer[4*PACKLEN]; // buffer used to contain the incoming packet
+    char packet[4*PACKLEN]; // buffer used to contain the incoming packet
 
     // create empty struct for the client address (for recvfrom() to use)
     struct sockaddr clientaddr;
@@ -56,12 +56,12 @@ void readfromsocket(int sockfd) {
     printf("Ready to receive data\n");
     do {
         // Read incoming packet (recvfrom will block until data is received)
-        int bytesreceived = recvfrom(sockfd, &recvbuffer, 2*PACKLEN, 0, &clientaddr, &clientaddrlen);
+        int bytesreceived = recvfrom(sockfd, &packet, 4*PACKLEN, 0, &clientaddr, &clientaddrlen);
         if (bytesreceived < 0) printf("error in receiving packet\n");
         // Append packet data to filebuffer
-        memcpy((filebuffer + fileoffset), recvbuffer, bytesreceived);
+        memcpy((filebuffer + fileoffset), packet, bytesreceived);
         fileoffset += bytesreceived;
-        packetlastbyte = recvbuffer[bytesreceived-1];
+        packetlastbyte = packet[bytesreceived-1];
 
         // Send Acknowledge
         int ack_sent = 0;

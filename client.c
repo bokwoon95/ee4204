@@ -64,15 +64,15 @@ void sendtosocket(int sockfd, struct sockaddr *addr, socklen_t addrlen) {
 
     struct ack_so ack;
     int counter = 0;
-    char sendbuffer[4*PACKLEN]; // buffer used to contain the outgoing packet
+    char packet[4*PACKLEN]; // buffer used to contain the outgoing packet
     long fileoffset = 0; // Tracks how many bytes have been sent so far
     while (fileoffset < filesize) {
         int packetsize = (PACKLEN < filesize - fileoffset) ? PACKLEN : filesize - fileoffset;
         printf("packetsize = %d\n", packetsize);
         // Copy the next section of the filebuffer into the packet
-        memcpy(sendbuffer, (filebuffer + fileoffset), packetsize);
+        memcpy(packet, (filebuffer + fileoffset), packetsize);
         // Send packet data into socket
-        int n = sendto(sockfd, &sendbuffer, packetsize, 0, addr, addrlen);
+        int n = sendto(sockfd, &packet, packetsize, 0, addr, addrlen);
         if (n < 0) printf("error in sending packet\n");
         if (counter % 4 == 0) {
             if ((recvfrom(sockfd, &ack, 2, 0, addr, &addrlen)) == -1) {
