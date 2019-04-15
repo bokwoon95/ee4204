@@ -1,6 +1,12 @@
 #!/bin/bash
 
 # gcc convenient, with warnings
+# This script will compile your .c file and run it for you with the provided arguments
+# Instead of
+#    gcc -Wall -Werror file.c -o file.out
+#    ./file.out [arguments...]
+# You can run
+#    ./ccc file.c [arguments...]
 if [ $# -gt 0 ]; then
   CFILE="$(echo $1 | perl -pe "s:^(.+)\.c$:\1:")"
   shift; CARGS="$@"

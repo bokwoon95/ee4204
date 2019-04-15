@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
     server_addr_in.sin_port = htons(MYUDP_PORT); // htons() converts port number to big endian
     server_addr_in.sin_addr.s_addr = INADDR_ANY; // INADDR_ANY=0, 0 means receive data from any IP address
     bzero(&(server_addr_in.sin_zero), 8);
-    // Typecast internet socket address to generic socket address
+    // Typecast internet socket address (struct sockaddr_in) to generic socket address (struct sockaddr)
     struct sockaddr *server_addr = (struct sockaddr *)&server_addr_in;
     socklen_t server_addrlen = sizeof(struct sockaddr);
 
