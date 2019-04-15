@@ -4,7 +4,7 @@ setlocal fdm=manual
 setlocal fde=0
 setlocal fmr={{{,}}}
 setlocal fdi=#
-setlocal fdl=0
+setlocal fdl=2
 setlocal fml=1
 setlocal fdn=20
 setlocal fen
@@ -12,18 +12,28 @@ silent! normal! zE
 4,6fold
 9,28fold
 30,32fold
-34,38fold
-40,42fold
-68,70fold
-99,105fold
-45,106fold
-108,115fold
-40
+34,36fold
+40,43fold
+45,59fold
+61,63fold
+93,95fold
+97,100fold
+39,101fold
+103,110fold
+30
+normal! zc
+39
 normal! zo
 45
-normal! zo
-99
-normal! zo
+normal! zc
+61
+normal! zc
+93
+normal! zc
+97
+normal! zc
+103
+normal! zc
 let &so = s:so_save | let &siso = s:siso_save
 doautoall SessionLoadPost
 " vim: set ft=vim :
