@@ -26,6 +26,11 @@ int main(int argc, char *argv[]) {
     printf("Ready to receive data\n");
     readfromsocket(sockfd);
     close(sockfd);
+
+    // Compare myfile.txt and myUDPreceive.txt
+    printf("Differences between myfile.txt and myUDPreceive.txt:\n");
+    char * const args[]={"diff", "myfile.txt", "myUDPreceive.txt"}; 
+    execv("/usr/bin/diff", args);
 }
 
 void readfromsocket(int sockfd) {
@@ -87,7 +92,7 @@ void readfromsocket(int sockfd) {
     // Copy the filebuffer contents into file
     fwrite(filebuffer, 1, fileoffset, fp);
     fclose(fp);
-    printf("File data received successfully, %d bytes written\n\n", (int)fileoffset);
+    printf("File data received successfully, %d bytes written\n", (int)fileoffset);
 }
 
 void send_ack(int sockfd, struct sockaddr *addr, socklen_t addrlen, long fileoffset) {
