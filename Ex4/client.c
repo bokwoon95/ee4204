@@ -96,8 +96,8 @@ void sendtosocket(int sockfd, struct sockaddr *server_addr, socklen_t server_add
     // Calculate difference between start and end time and print transfer rate
     tv_sub(&timeRcv, &timeSend);
     float time = (timeRcv.tv_sec)*1000.0 + (timeRcv.tv_usec)/1000.0;
-    printf("Time(ms) : %.3f, Data sent(byte): %d\n", time, (int)fileoffset);
-    printf("Data rate: %.3f (Kbytes/s) for DATAUNIT of %d bytes\n", fileoffset/time/1000, DATAUNIT);
+    printf("Time(ms) : %.3f, Data sent(byte): %ld\n", time, fileoffset);
+    printf("Data rate: %.3f (Mbytes/s) for DATAUNIT size of %d bytes\n", fileoffset/time/1000, DATAUNIT);
 }
 
 void tv_sub(struct  timeval *out, struct timeval *in) {
