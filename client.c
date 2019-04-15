@@ -69,8 +69,6 @@ void sendtosocket(int sockfd, struct sockaddr *server_addr, socklen_t server_add
     struct timeval timeSend;
     gettimeofday(&timeSend, NULL);
 
-    /* struct ack_so ack; */
-    /* int counter = 0; */
     long fileoffset = 0; // Tracks how many bytes have been sent so far
     int dum = 1; // data unit multiple
     while (fileoffset < filesize) {
@@ -83,20 +81,6 @@ void sendtosocket(int sockfd, struct sockaddr *server_addr, socklen_t server_add
         int n = sendto(sockfd, &packet, packetsize, 0, server_addr, server_addrlen);
         if (n < 0) printf("error in sending packet\n");
         wait_ack(sockfd, server_addr, server_addrlen);
-
-        /* if (counter % 4 == 0) { */
-        /*     if ((recvfrom(sockfd, &ack, 2, 0, server_addr, &server_addrlen)) == -1) { */
-        /*         printf("error when receiving\n"); */
-        /*         exit(1); */
-        /*     } else { */
-        /*         if (!(ack.num && !ack.len)) { */
-        /*             printf("Transmission Error\n"); */
-        /*             return; */
-        /*         } */
-        /*     } */
-        /*     printf("ACK received, alternating packet numbers\n"); */
-        /* } */
-        /* counter+=1; */
         fileoffset += packetsize;
     }
 
