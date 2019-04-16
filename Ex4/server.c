@@ -51,7 +51,7 @@ void readfromsocket(int sockfd) {
     int n = recvfrom(sockfd, &filesize, sizeof(filesize), 0, &client_addr, &client_addrlen);
     if (n < 0) { printf("error in receiving packet\n"); exit(1); }
     send_ack(sockfd, &client_addr, client_addrlen, 0); // Acknowledge that filesize has been received
-    printf("Client says the file is %ld bytes big\n", filesize-1);
+    printf("Client says the file is %ld bytes big. DATAUNIT %d bytes\n", filesize-1, DATAUNIT);
 
     //----------------------------------------//
     // buffer used to contain the entire file //
@@ -82,7 +82,7 @@ void readfromsocket(int sockfd) {
 
         // Acknowledge that packet has been received
         send_ack(sockfd, &client_addr, client_addrlen, fileoffset);
-        dum = (++dum % 5 == 0) ? 1 : dum % 5;
+        /* dum = (++dum % 5 == 0) ? 1 : dum % 5; */
     } while (packetlastbyte != 0x4);
     fileoffset-=1; // Disregard the last byte of filebuffer because it is the End of Transmission character 0x4
 

@@ -86,7 +86,7 @@ void sendtosocket(int sockfd, struct sockaddr *server_addr, socklen_t server_add
             printf("packet of size %d sent\n", n);
         }
         wait_ack(sockfd, server_addr, server_addrlen);
-        dum = (++dum % 5 == 0) ? 1 : dum % 5;
+        /* dum = (++dum % 5 == 0) ? 1 : dum % 5; */
     }
 
     // Get end time
