@@ -8,12 +8,12 @@
 # You can run
 #    ./ccc file.c [arguments...]
 if [ $# -gt 0 ]; then
-  CFILE="$(echo $1 | perl -pe "s:^(.+)\.c$:\1:")"
-  shift; CARGS="$@"
-  if [ "$CFILE" = "" ]; then
+  if [ "$(echo -n $1 | tail -c2)" != ".c" ]; then
     echo "That's not a .c file"
     exit 1
   fi
+  CFILE="$(echo $1 | perl -pe "s:^(.+)\.c$:\1:")"
+  shift; CARGS="$@"
   if gcc -g -std=c99 -Wall -Werror "$CFILE.c" -o "$CFILE.out"; then
     eval "./$CFILE.out $CARGS"
   elif gcc -g -std=c99 -Wall "$CFILE.c" -o "$CFILE.out"; then
