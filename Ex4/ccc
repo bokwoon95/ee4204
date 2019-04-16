@@ -3,7 +3,7 @@
 # gcc convenient, with warnings
 # This script will compile your .c file and run it for you with the provided arguments
 # Instead of
-#    gcc -std=c99 -Wall -Werror file.c -o file.out
+#    gcc -g -std=c99 -Wall -Werror file.c -o file.out
 #    ./file.out [arguments...]
 # You can run
 #    ./ccc file.c [arguments...]
@@ -14,9 +14,9 @@ if [ $# -gt 0 ]; then
     echo "That's not a .c file"
     exit 1
   fi
-  if gcc -std=c99 -Wall -Werror "$CFILE.c" -o "$CFILE.out"; then
+  if gcc -g -std=c99 -Wall -Werror "$CFILE.c" -o "$CFILE.out"; then
     eval "./$CFILE.out $CARGS"
-  elif gcc -std=c99 -Wall "$CFILE.c" -o "$CFILE.out"; then
+  elif gcc -g -std=c99 -Wall "$CFILE.c" -o "$CFILE.out"; then
     echo "warning present, continue? y/n (leave blank for \"y\")"
     read CONTINUE
     if [ "$CONTINUE" = "" -o "$CONTINUE" = "y" ]; then

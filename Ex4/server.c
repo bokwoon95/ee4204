@@ -82,7 +82,7 @@ void readfromsocket(int sockfd) {
 
         // Acknowledge that packet has been received
         send_ack(sockfd, &client_addr, client_addrlen, fileoffset);
-        /* dum = (++dum % 5 == 0) ? 1 : dum % 5; */
+        dum = (++dum % 5 == 0) ? 1 : dum % 5;
     } while (packetlastbyte != 0x4);
     fileoffset-=1; // Disregard the last byte of filebuffer because it is the End of Transmission character 0x4
 
