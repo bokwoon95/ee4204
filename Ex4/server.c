@@ -23,8 +23,10 @@ int main(int argc, char *argv[]) {
     if (bind(sockfd, server_addr, server_addrlen) == -1) { printf("error in binding"); exit(1); }
 
     // Read file data from socket
-    printf("Ready to receive data\n");
-    readfromsocket(sockfd);
+    while (1) {
+        printf("Ready to receive data\n");
+        readfromsocket(sockfd);
+    }
     close(sockfd);
 
     // Compare myfile.txt and myUDPreceive.txt
